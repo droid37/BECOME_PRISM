@@ -9,9 +9,11 @@
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "prepare": "husky",
-    "capture-ui": "node capture_ui.js"
+    "capture-ui": "node capture_ui.js",
+    "apply-blueprint": "node scripts/apply-blueprint.mjs"
   },
   "dependencies": {
+    "execa": "^9.6.1",
     "framer-motion": "^12.23.25",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.4",
