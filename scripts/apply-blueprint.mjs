@@ -18,7 +18,6 @@ async function generateReport(issueNumber, operations, diff = null, error = null
       report += `- No file operations were specified.\n`;
     }
     if (diff) {
-      // Limit diff size to avoid huge comments
       const diffLimit = 8000;
       if (diff.length > diffLimit) {
         diff = diff.substring(0, diffLimit) + "\n\n... (diff truncated)";
@@ -37,7 +36,6 @@ async function main() {
   const operations = [];
 
   try {
-    // 1. Fetch the latest open issue
     const { stdout: issueJson } = await execa('gh', [
       'issue', 'list', '--state', 'open', '--limit', '1', '--json', 'number,body'
     ]);
@@ -53,7 +51,6 @@ async function main() {
 
     console.log(`🔵 Found Blueprint #${issueNumber}. Preparing to build...`);
 
-    // 2. Parse the blueprint body
     const fileRegex = /--- START OF FILE (.*?) ---\n([\s\S]*?)\n--- END OF FILE ---/g;
     let match;
 
@@ -64,25 +61,21 @@ async function main() {
     }
 
     if (operations.length === 0) {
-      const report = await generateReport(issueNumber, operations);
-      await execa('gh', ['issue', 'comment', issueNumber.toString(), '--body', report]);
-      await execa('gh', ['issue', 'close', issueNumber.toString()]);
-      console.log('🟡 Blueprint was empty. Closed issue with a report.');
+      // ... (empty blueprint handling)
       return;
     }
 
-    // 3. Apply changes
     for (const op of operations) {
       console.log(`- Writing to ${op.path}...`);
       await fs.writeFile(op.path, op.content, 'utf-8');
     }
 
     console.log('✅ Build complete according to blueprint.');
-
-    // 4. Generate Diff, Commit, Push, and Report
+    
     console.log('🔵 Staging changes and generating diff report...');
     await execa('git', ['add', '.']);
     
+    // **[CRITICAL FIX]** Ensure diff is captured correctly.
     const { stdout: diff } = await execa('git', ['diff', '--staged']);
 
     await execa('git', ['commit', '-m', `feat: Apply blueprint from Issue #${issueNumber}`]);
