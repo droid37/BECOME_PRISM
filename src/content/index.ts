@@ -1,14 +1,14 @@
-```javascript
-// --- BECOME PRISM: The Sentient Spy v2 (Content Script) ---
-// This script combines Platform-Aware Intelligence with the 4-Tier Invincible Extraction system.
+// --- BECOME PRISM: The Sentient Spy v2.1 (Content Script) ---
+// This script combines Platform-Aware Intelligence with the Invincible Extraction system.
 
-console.log('BECOME PRISM: Content script loaded (Sentient Spy v2)');
+console.log('BECOME PRISM: Content script loaded (Sentient Spy v2.1)');
 
 // ============================================
 // PLATFORM-AWARE INTELLIGENCE (Special Forces)
 // ============================================
 
 function extractFromGoogleAIStudio(): { title: string; content: string; isHtml: boolean } | null {
+  // Targeting the `a.prompt-link` as per the ground truth evidence.
   const titleElement = document.querySelector('a.prompt-link');
   const contentElement = document.querySelector('div.message-container');
   if (titleElement && contentElement) {
@@ -31,34 +31,29 @@ function extractFromChatGPT(): { title: string; content: string; isHtml: boolean
 }
 
 // ============================================
-// 4-TIER INVINCIBLE EXTRACTION (Infantry)
+// INVINCIBLE EXTRACTION (Infantry)
 // ============================================
 
 function performInvincibleExtraction(): { content: string; isHtml: boolean } | null {
-  console.log('[PRISM Spy] Invincible Extraction: Deploying 4-Tier system...');
-  
-  // Simplified for directness. We will primarily return innerHTML for Turndown.
-  
-  // Tier 2: Deep Targeting
+  console.log('[PRISM Spy] Invincible Extraction: Deploying fallback...');
+
   const selectors = ['article', 'main', '[role="main"]', '.post-content', '.content', '.main-content'];
   for (const selector of selectors) {
     const element = document.querySelector(selector) as HTMLElement;
     if (element && element.innerText.trim().length > 200) {
-      console.log(`[PRISM Spy] Tier 2 Success: Found content in <${selector}>`);
+      console.log(`[PRISM Spy] Fallback Success: Found content in <${selector}>`);
       return { content: element.innerHTML, isHtml: true };
     }
   }
 
-  // Tier 3 & 4 Combined: Cleaned Body HTML
-  console.log('[PRISM Spy] Tier 2 Failed. Deploying Tier 3/4: Cleaned Body...');
+  console.log('[PRISM Spy] Fallback Failed. Deploying Nuclear Option...');
   const bodyClone = document.body.cloneNode(true) as HTMLElement;
-  // Remove noise elements
-  const noiseSelectors = 'nav, footer, header, script, style, button, aside, .nav, .footer, .header, .sidebar, .menu, .toolbar, .ad, .advertisement, .icon, .avatar, .timestamp, [role="navigation"], [role="banner"]';
+  const noiseSelectors = 'nav, footer, header, script, style, button, aside, [role="navigation"], [role="banner"]';
   bodyClone.querySelectorAll(noiseSelectors).forEach(el => el.remove());
-  
+
   const cleanedHtml = bodyClone.innerHTML;
   if (cleanedHtml.trim().length > 100) {
-     return { content: cleanedHtml, isHtml: true };
+    return { content: cleanedHtml, isHtml: true };
   }
 
   return null;
@@ -75,24 +70,22 @@ chrome.runtime.onMessage.addListener((
 ) => {
   if (message.action === 'extract') {
     console.log('[PRISM] Extraction Command Received. Mode:', message.mode);
-    
+
     let result: { title: string; content: string; isHtml: boolean } | null = null;
     const hostname = window.location.hostname;
 
-    // 1. Try Platform-Specific Adapters first
     if (hostname.includes('aistudio.google.com')) {
       result = extractFromGoogleAIStudio();
     } else if (hostname.includes('openai.com')) {
       result = extractFromChatGPT();
     }
 
-    // 2. If adapters fail, or it's a generic site, use the Invincible Extraction
     if (!result || !result.content) {
       console.log('[PRISM Spy] Platform adapter failed or not applicable. Engaging Invincible Extraction...');
       const fallbackResult = performInvincibleExtraction();
       if (fallbackResult && fallbackResult.content) {
         result = {
-          title: document.title, // Use document title as fallback
+          title: document.title,
           content: fallbackResult.content,
           isHtml: fallbackResult.isHtml
         };
@@ -112,9 +105,8 @@ chrome.runtime.onMessage.addListener((
       console.error('[PRISM] All extraction methods failed.');
       sendResponse({ success: false, error: 'No meaningful content could be extracted.' });
     }
-    
-    return true; // Keep channel open for async response
+
+    return true;
   }
   return false;
 });
-```
