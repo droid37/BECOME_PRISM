@@ -171,7 +171,7 @@ function performExtraction(mode: 'full' | 'transplant' | 'code' | 'logic' | 'con
 chrome.runtime.onMessage.addListener((
   message: { action: string; mode?: 'full' | 'transplant' | 'code' | 'logic' | 'context' },
   _sender: chrome.runtime.MessageSender,
-  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean }) => void
+  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean; title?: string; url?: string }) => void
 ) => {
   if (message.action === 'extract') {
     console.log('[PRISM] Extraction requested, mode:', message.mode);
@@ -185,7 +185,9 @@ chrome.runtime.onMessage.addListener((
       sendResponse({
         success: true,
         content: result.content,
-        isHtml: result.isHtml || false
+        title: result.title,
+        isHtml: result.isHtml || false,
+        url: window.location.href
       });
     } else {
       console.error('[PRISM] Extraction failed:', result.error);
