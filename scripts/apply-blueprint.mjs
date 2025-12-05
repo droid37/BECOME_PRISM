@@ -3,9 +3,16 @@
 import { execa } from 'execa';
 import fs from 'fs/promises';
 
-const ECHO_WEBHOOK_URL = 'https://webhook.site/7dbb3695-5ac0-4a54-a33c-2f8dc056785a';
+// Bug 1 Fix: Use environment variable instead of hardcoded webhook URL
+// If not set, Echo Protocol is disabled (graceful degradation)
+const ECHO_WEBHOOK_URL = process.env.ECHO_WEBHOOK_URL || null;
 
 async function sendEcho(report) {
+  if (!ECHO_WEBHOOK_URL) {
+    console.log('🟡 Echo Protocol: Webhook URL not configured. Skipping echo transmission.');
+    return;
+  }
+  
   try {
     console.log('🔵 Echo Protocol: Transmitting report to Architect...');
     await fetch(ECHO_WEBHOOK_URL, {
@@ -26,7 +33,10 @@ async function generateReport(issueNumber, operations, prURL = null, error = nul
   } else {
     report += `**STATUS: PULL REQUEST CREATED** 🟢\n\n`;
     report += `A Pull Request has been created for your review. The Guardian Protocol is now running checks.\n\n`;
-    report += `**[➡️ Review Pull Request](${prURL})**\n\n`;
+    // Bug 3 Fix: Trim the prURL to remove trailing whitespace/newlines
+    if (prURL) {
+      report += `**[➡️ Review Pull Request](${prURL.trim()})**\n\n`;
+    }
     report += `**Applied Changes:**\n`;
     operations.forEach(op => {
       report += `- [x] Wrote ${op.content.length} bytes to \`${op.path}\`\n`;
@@ -62,7 +72,18 @@ async function main() {
       operations.push({ path: match[1].trim(), content: match[2] });
     }
 
+    // Bug 2 Fix: Check for empty blueprints before proceeding
+    if (operations.length === 0) {
+      console.log('🟡 Blueprint is empty or malformed. Closing issue and standing by.');
+      report = await generateReport(issueNumber, operations);
+      await execa('gh', ['issue', 'comment', issueNumber.toString(), '--body', report]);
+      await execa('gh', ['issue', 'close', issueNumber.toString()]);
+      await execa('git', ['checkout', 'main']);
+      return;
+    }
+
     for (const op of operations) {
+      console.log(`- Writing to ${op.path}...`);
       await fs.writeFile(op.path, op.content, 'utf-8');
     }
     console.log('✅ Build complete.');
@@ -71,9 +92,10 @@ async function main() {
     await execa('git', ['commit', '-m', `feat: Apply blueprint from Issue #${issueNumber}\n\nCloses #${issueNumber}`]);
     await execa('git', ['push', '-u', 'origin', branchName]);
 
+    // Bug 3 Fix: Trim the prURL output to remove trailing whitespace/newlines
     const { stdout: prURL } = await execa('gh', ['pr', 'create', '--title', title, '--body', `Auto-created PR for Issue #${issueNumber}.`, '--base', 'main', '--head', branchName]);
     
-    report = await generateReport(issueNumber, operations, prURL);
+    report = await generateReport(issueNumber, operations, prURL.trim());
     await execa('gh', ['issue', 'comment', issueNumber.toString(), '--body', report]);
     await sendEcho(report);
 
