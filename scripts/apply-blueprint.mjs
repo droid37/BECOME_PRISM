@@ -3,28 +3,7 @@
 import { execa } from 'execa';
 import fs from 'fs/promises';
 
-// Bug 1 Fix: Use environment variable instead of hardcoded webhook URL
-// If not set, Echo Protocol is disabled (graceful degradation)
-const ECHO_WEBHOOK_URL = process.env.ECHO_WEBHOOK_URL || null;
 
-async function sendEcho(report) {
-  if (!ECHO_WEBHOOK_URL) {
-    console.log('🟡 Echo Protocol: Webhook URL not configured. Skipping echo transmission.');
-    return;
-  }
-  
-  try {
-    console.log('🔵 Echo Protocol: Transmitting report to Architect...');
-    await fetch(ECHO_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ report }),
-    });
-    console.log('🟢 Echo sent successfully.');
-  } catch (error) {
-    console.error('🔴 Echo Protocol: Failed to send report.', error);
-  }
-}
 
 async function generateReport(issueNumber, operations, prURL = null, error = null) {
   let report = `## Blueprint Agent Report: #${issueNumber}\n\n`;
@@ -94,10 +73,10 @@ async function main() {
 
     // Bug 3 Fix: Trim the prURL output to remove trailing whitespace/newlines
     const { stdout: prURL } = await execa('gh', ['pr', 'create', '--title', title, '--body', `Auto-created PR for Issue #${issueNumber}.`, '--base', 'main', '--head', branchName]);
-    
+
     report = await generateReport(issueNumber, operations, prURL.trim());
     await execa('gh', ['issue', 'comment', issueNumber.toString(), '--body', report]);
-    await sendEcho(report);
+
 
     console.log(`🟢 Pull Request created for Blueprint #${issueNumber}.`);
     await execa('git', ['checkout', 'main']);
@@ -107,9 +86,9 @@ async function main() {
     if (issueNumber) {
       report = await generateReport(issueNumber, null, null, error);
       await execa('gh', ['issue', 'comment', issueNumber.toString(), '--body', report]);
-      await sendEcho(report);
+
     }
-    try { await execa('git', ['checkout', 'main']); } catch (e) {}
+    try { await execa('git', ['checkout', 'main']); } catch (e) { }
     process.exit(1);
   }
 }
