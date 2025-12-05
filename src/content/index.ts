@@ -97,9 +97,40 @@ function extractNuclear(): string {
   return document.body.innerText || '';
 }
 
+// Platform-Specific Extraction: Google AI Studio
+function extractFromGoogleAIStudio(): { title: string; content: string } | null {
+  // **[FINAL SNIPE]**
+  // Targeting the `a.prompt-link` as per the ground truth evidence.
+  const titleElement = document.querySelector('a.prompt-link');
+  const contentElement = document.querySelector('div.message-container');
+
+  if (titleElement && contentElement) {
+    const titleText = titleElement.textContent?.trim() || 'AI Studio Prompt';
+    return {
+      title: titleText,
+      content: contentElement.innerHTML,
+    };
+  }
+  return null;
+}
+
 // Main Extraction Function: 4-Tier Black Hole Strategy
-function performExtraction(mode: 'full' | 'transplant' | 'code' | 'logic' | 'context'): { success: boolean; content?: string; error?: string; isHtml?: boolean } {
+function performExtraction(mode: 'full' | 'transplant' | 'code' | 'logic' | 'context'): { success: boolean; content?: string; error?: string; isHtml?: boolean; title?: string } {
   try {
+    // Platform-Specific: Google AI Studio (Highest Priority for aistudio.google.com)
+    const hostname = window.location.hostname;
+    if (hostname.includes('aistudio.google.com')) {
+      const aiStudioResult = extractFromGoogleAIStudio();
+      if (aiStudioResult) {
+        return {
+          success: true,
+          content: aiStudioResult.content,
+          title: aiStudioResult.title,
+          isHtml: true
+        };
+      }
+    }
+
     // Tier 1: User Selection (Highest Priority)
     const selectedText = getSelectedText();
     if (selectedText) {
@@ -171,7 +202,7 @@ function performExtraction(mode: 'full' | 'transplant' | 'code' | 'logic' | 'con
 chrome.runtime.onMessage.addListener((
   message: { action: string; mode?: 'full' | 'transplant' | 'code' | 'logic' | 'context' },
   _sender: chrome.runtime.MessageSender,
-  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean; title?: string; url?: string }) => void
+  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean }) => void
 ) => {
   if (message.action === 'extract') {
     console.log('[PRISM] Extraction requested, mode:', message.mode);
@@ -185,9 +216,7 @@ chrome.runtime.onMessage.addListener((
       sendResponse({
         success: true,
         content: result.content,
-        title: result.title,
-        isHtml: result.isHtml || false,
-        url: window.location.href
+        isHtml: result.isHtml || false
       });
     } else {
       console.error('[PRISM] Extraction failed:', result.error);
