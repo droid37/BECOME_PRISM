@@ -1,202 +1,120 @@
-// --- BECOME PRISM: The Minimalist Spy (Content Script) ---
-// SINGLE PURPOSE: Extract raw content from webpage and return it to popup
-// NO UI, NO SHADOW DOM, NO CSS INJECTION - Pure data extraction only
+```javascript
+// --- BECOME PRISM: The Sentient Spy v2 (Content Script) ---
+// This script combines Platform-Aware Intelligence with the 4-Tier Invincible Extraction system.
 
-console.log('BECOME PRISM: Content script loaded (Minimalist Spy)');
+console.log('BECOME PRISM: Content script loaded (Sentient Spy v2)');
 
 // ============================================
-// 4-TIER INVINCIBLE EXTRACTION
+// PLATFORM-AWARE INTELLIGENCE (Special Forces)
 // ============================================
 
-// Tier 1: User Selection
-function getSelectedText(): string | null {
-  const selection = window.getSelection();
-  if (selection && selection.toString().trim().length > 10) {
-    return selection.toString().trim();
+function extractFromGoogleAIStudio(): { title: string; content: string; isHtml: boolean } | null {
+  const titleElement = document.querySelector('a.prompt-link');
+  const contentElement = document.querySelector('div.message-container');
+  if (titleElement && contentElement) {
+    const titleText = titleElement.textContent?.trim() || 'AI Studio Prompt';
+    console.log('[PRISM Spy] AI Studio Adapter: Success. Title found:', titleText);
+    return { title: titleText, content: contentElement.innerHTML, isHtml: true };
   }
   return null;
 }
 
-// Tier 2: Deep Targeting (Specific selectors for common content areas)
-function extractWithSelectors(): string | null {
-  const selectors = [
-    'article',
-    'main',
-    '[role="article"]',
-    '[role="main"]',
-    '.content',
-    '.post',
-    '.message',
-    '.chat-message',
-    'div[role="presentation"]'
-  ];
+function extractFromChatGPT(): { title: string; content: string; isHtml: boolean } | null {
+  const titleElement = document.querySelector('div[class*="group"] button[class*="items-center"]');
+  const contentElement = document.querySelector('div[class*="react-scroll-to-bottom"]');
+  if (titleElement && contentElement) {
+    const titleText = titleElement.textContent?.trim() || 'ChatGPT Conversation';
+    console.log('[PRISM Spy] ChatGPT Adapter: Success. Title found:', titleText);
+    return { title: titleText, content: contentElement.innerHTML, isHtml: true };
+  }
+  return null;
+}
 
+// ============================================
+// 4-TIER INVINCIBLE EXTRACTION (Infantry)
+// ============================================
+
+function performInvincibleExtraction(): { content: string; isHtml: boolean } | null {
+  console.log('[PRISM Spy] Invincible Extraction: Deploying 4-Tier system...');
+  
+  // Simplified for directness. We will primarily return innerHTML for Turndown.
+  
+  // Tier 2: Deep Targeting
+  const selectors = ['article', 'main', '[role="main"]', '.post-content', '.content', '.main-content'];
   for (const selector of selectors) {
     const element = document.querySelector(selector) as HTMLElement;
-    if (element) {
-      const text = element.innerText || element.textContent || '';
-      if (text.trim().length > 50) {
-        return element.innerHTML;
-      }
+    if (element && element.innerText.trim().length > 200) {
+      console.log(`[PRISM Spy] Tier 2 Success: Found content in <${selector}>`);
+      return { content: element.innerHTML, isHtml: true };
     }
   }
+
+  // Tier 3 & 4 Combined: Cleaned Body HTML
+  console.log('[PRISM Spy] Tier 2 Failed. Deploying Tier 3/4: Cleaned Body...');
+  const bodyClone = document.body.cloneNode(true) as HTMLElement;
+  // Remove noise elements
+  const noiseSelectors = 'nav, footer, header, script, style, button, aside, .nav, .footer, .header, .sidebar, .menu, .toolbar, .ad, .advertisement, .icon, .avatar, .timestamp, [role="navigation"], [role="banner"]';
+  bodyClone.querySelectorAll(noiseSelectors).forEach(el => el.remove());
+  
+  const cleanedHtml = bodyClone.innerHTML;
+  if (cleanedHtml.trim().length > 100) {
+     return { content: cleanedHtml, isHtml: true };
+  }
+
   return null;
 }
 
-// Tier 3: TreeWalker (The Drill) - Extract all visible text nodes
-function extractWithTreeWalker(): string {
-  const noiseTags = ['NAV', 'FOOTER', 'HEADER', 'SCRIPT', 'STYLE', 'BUTTON', 'ASIDE'];
-  const noiseClasses = ['nav', 'footer', 'header', 'sidebar', 'menu', 'toolbar', 'ad', 'advertisement', 'icon', 'avatar', 'timestamp'];
-  
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: (node: Node) => {
-        const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
-        
-        // Filter out noise tags
-        if (noiseTags.includes(parent.tagName)) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        
-        // Filter out noise classes
-        const classList = parent.classList;
-        for (const noiseClass of noiseClasses) {
-          if (classList.contains(noiseClass)) {
-            return NodeFilter.FILTER_REJECT;
-          }
-        }
-        
-        // Only accept visible text nodes
-        const style = window.getComputedStyle(parent);
-        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-          return NodeFilter.FILTER_REJECT;
-        }
-        
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    }
-  );
-
-  const textNodes: string[] = [];
-  let node: Node | null;
-  while (node = walker.nextNode()) {
-    const text = node.textContent?.trim();
-    if (text && text.length > 0) {
-      textNodes.push(text);
-    }
-  }
-
-  return textNodes.join('\n\n');
-}
-
-// Tier 4: Nuclear Option - document.body.innerText
-function extractNuclear(): string {
-  return document.body.innerText || '';
-}
-
-// Main Extraction Function: 4-Tier Black Hole Strategy
-function performExtraction(mode: 'full' | 'transplant' | 'code' | 'logic' | 'context'): { success: boolean; content?: string; error?: string; isHtml?: boolean } {
-  try {
-    // Tier 1: User Selection (Highest Priority)
-    const selectedText = getSelectedText();
-    if (selectedText) {
-      if (mode === 'full') {
-        // For full mode, try to get HTML from selection
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const container = document.createElement('div');
-          container.appendChild(range.cloneContents());
-          const html = container.innerHTML;
-          if (html.trim().length > 0) {
-            return { success: true, content: html, isHtml: true };
-          }
-        }
-        return { success: true, content: selectedText, isHtml: false };
-      } else {
-        return { success: true, content: selectedText, isHtml: false };
-      }
-    }
-
-    // Tier 2: Deep Targeting
-    const selectorContent = extractWithSelectors();
-    if (selectorContent && selectorContent.trim().length > 50) {
-      return { success: true, content: selectorContent, isHtml: true };
-    }
-
-    // Tier 3: TreeWalker (The Drill)
-    const treeWalkerText = extractWithTreeWalker();
-    if (treeWalkerText.trim().length > 50) {
-      if (mode === 'full') {
-        // For full mode, try to get HTML
-        const bodyClone = document.body.cloneNode(true) as HTMLElement;
-        // Remove noise elements
-        const noiseSelectors = 'nav, footer, header, script, style, button, aside, .nav, .footer, .header, .sidebar, .menu, .toolbar, .ad, .advertisement, .icon, .avatar, .timestamp';
-        bodyClone.querySelectorAll(noiseSelectors).forEach(el => el.remove());
-        const html = bodyClone.innerHTML;
-        if (html.trim().length > 50) {
-          return { success: true, content: html, isHtml: true };
-        }
-      }
-      return { success: true, content: treeWalkerText, isHtml: false };
-    }
-
-    // Tier 4: Nuclear Option
-    const nuclearText = extractNuclear();
-    if (nuclearText.trim().length > 50) {
-      if (mode === 'full') {
-        // For full mode, return body HTML
-        const bodyClone = document.body.cloneNode(true) as HTMLElement;
-        const noiseSelectors = 'nav, footer, header, script, style, button, aside';
-        bodyClone.querySelectorAll(noiseSelectors).forEach(el => el.remove());
-        return { success: true, content: bodyClone.innerHTML, isHtml: true };
-      }
-      return { success: true, content: nuclearText, isHtml: false };
-    }
-
-    return { success: false, error: 'No content found' };
-  } catch (error) {
-    console.error('[PRISM] Extraction error:', error);
-    return { success: false, error: 'Extraction failed' };
-  }
-}
-
 // ============================================
-// MESSAGE LISTENER: The Only Interface
+// MESSAGE LISTENER: The Command Center
 // ============================================
 
 chrome.runtime.onMessage.addListener((
-  message: { action: string; mode?: 'full' | 'transplant' | 'code' | 'logic' | 'context' },
+  message: { action: string; mode?: string },
   _sender: chrome.runtime.MessageSender,
-  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean }) => void
+  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean; title?: string; url?: string }) => void
 ) => {
   if (message.action === 'extract') {
-    console.log('[PRISM] Extraction requested, mode:', message.mode);
+    console.log('[PRISM] Extraction Command Received. Mode:', message.mode);
     
-    // Perform 4-Tier Extraction (transplant uses same logic as full)
-    const extractionMode = message.mode === 'transplant' ? 'full' : (message.mode || 'full');
-    const result = performExtraction(extractionMode);
-    
-    if (result.success && result.content) {
-      console.log('[PRISM] Extraction successful, content length:', result.content.length);
+    let result: { title: string; content: string; isHtml: boolean } | null = null;
+    const hostname = window.location.hostname;
+
+    // 1. Try Platform-Specific Adapters first
+    if (hostname.includes('aistudio.google.com')) {
+      result = extractFromGoogleAIStudio();
+    } else if (hostname.includes('openai.com')) {
+      result = extractFromChatGPT();
+    }
+
+    // 2. If adapters fail, or it's a generic site, use the Invincible Extraction
+    if (!result || !result.content) {
+      console.log('[PRISM Spy] Platform adapter failed or not applicable. Engaging Invincible Extraction...');
+      const fallbackResult = performInvincibleExtraction();
+      if (fallbackResult && fallbackResult.content) {
+        result = {
+          title: document.title, // Use document title as fallback
+          content: fallbackResult.content,
+          isHtml: fallbackResult.isHtml
+        };
+      }
+    }
+
+    if (result && result.content) {
+      console.log('[PRISM] Extraction successful. Title:', result.title);
       sendResponse({
         success: true,
+        title: result.title,
         content: result.content,
-        isHtml: result.isHtml || false
+        isHtml: result.isHtml,
+        url: window.location.href
       });
     } else {
-      console.error('[PRISM] Extraction failed:', result.error);
-      sendResponse({
-        success: false,
-        error: result.error || 'No content found'
-      });
+      console.error('[PRISM] All extraction methods failed.');
+      sendResponse({ success: false, error: 'No meaningful content could be extracted.' });
     }
     
     return true; // Keep channel open for async response
   }
-  
   return false;
 });
+```
