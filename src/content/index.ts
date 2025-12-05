@@ -1,83 +1,202 @@
-// src/content/index.ts
+// --- BECOME PRISM: The Minimalist Spy (Content Script) ---
+// SINGLE PURPOSE: Extract raw content from webpage and return it to popup
+// NO UI, NO SHADOW DOM, NO CSS INJECTION - Pure data extraction only
 
-// This script runs in the context of the webpage
-// It extracts content based on the action requested by the popup
+console.log('BECOME PRISM: Content script loaded (Minimalist Spy)');
 
-// Function to extract content from ChatGPT
-function extractFromChatGPT(): { title: string; content: string } | null {
-  const titleElement = document.querySelector('div[class*="group"] button[class*="items-center"]');
-  const contentElement = document.querySelector('div[class*="react-scroll-to-bottom"]');
+// ============================================
+// 4-TIER INVINCIBLE EXTRACTION
+// ============================================
 
-  if (titleElement && contentElement) {
-    return {
-      title: titleElement.textContent?.trim() || 'ChatGPT Conversation',
-      content: contentElement.innerHTML,
-    };
+// Tier 1: User Selection
+function getSelectedText(): string | null {
+  const selection = window.getSelection();
+  if (selection && selection.toString().trim().length > 10) {
+    return selection.toString().trim();
   }
   return null;
 }
 
-// Function to extract content from Google AI Studio
-function extractFromGoogleAIStudio(): { title:string; content: string } | null {
-  // **[GROUND TRUTH FIX - DIRECT INJECTION]**
-  // Targeting based on verified data-testid attributes.
-  const titleElement = document.querySelector('h2[data-testid="context-panel-title"]');
-  const contentElement = document.querySelector('div.message-container');
+// Tier 2: Deep Targeting (Specific selectors for common content areas)
+function extractWithSelectors(): string | null {
+  const selectors = [
+    'article',
+    'main',
+    '[role="article"]',
+    '[role="main"]',
+    '.content',
+    '.post',
+    '.message',
+    '.chat-message',
+    'div[role="presentation"]'
+  ];
 
-  if (titleElement && contentElement) {
-    const titleText = titleElement.textContent?.trim() || 'AI Studio Prompt';
-    return {
-      title: titleText,
-      content: contentElement.innerHTML,
-    };
+  for (const selector of selectors) {
+    const element = document.querySelector(selector) as HTMLElement;
+    if (element) {
+      const text = element.innerText || element.textContent || '';
+      if (text.trim().length > 50) {
+        return element.innerHTML;
+      }
+    }
   }
   return null;
 }
 
-// Function to extract content from Claude.ai
-function extractFromClaudeAI(): { title: string; content: string } | null {
-  const titleElement = document.querySelector('h2[data-testid="conversation-title"]');
-  const contentElement = document.querySelector('div[data-testid="conversation-main"]');
+// Tier 3: TreeWalker (The Drill) - Extract all visible text nodes
+function extractWithTreeWalker(): string {
+  const noiseTags = ['NAV', 'FOOTER', 'HEADER', 'SCRIPT', 'STYLE', 'BUTTON', 'ASIDE'];
+  const noiseClasses = ['nav', 'footer', 'header', 'sidebar', 'menu', 'toolbar', 'ad', 'advertisement', 'icon', 'avatar', 'timestamp'];
+  
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node: Node) => {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        
+        // Filter out noise tags
+        if (noiseTags.includes(parent.tagName)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        
+        // Filter out noise classes
+        const classList = parent.classList;
+        for (const noiseClass of noiseClasses) {
+          if (classList.contains(noiseClass)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+        }
+        
+        // Only accept visible text nodes
+        const style = window.getComputedStyle(parent);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
 
-  if (titleElement && contentElement) {
-    return {
-      title: titleElement.textContent?.trim() || 'Claude Conversation',
-      content: contentElement.innerHTML,
-    };
+  const textNodes: string[] = [];
+  let node: Node | null;
+  while (node = walker.nextNode()) {
+    const text = node.textContent?.trim();
+    if (text && text.length > 0) {
+      textNodes.push(text);
+    }
   }
-  return null;
+
+  return textNodes.join('\n\n');
 }
 
-// Generic content extraction (fallback)
-function extractGenericContent(): { title: string; content: string } {
-  const title = document.title;
-  const mainContent = document.querySelector('main, article, #content, #main');
-  const content = mainContent ? mainContent.innerHTML : document.body.innerHTML;
-  return { title, content };
+// Tier 4: Nuclear Option - document.body.innerText
+function extractNuclear(): string {
+  return document.body.innerText || '';
 }
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'extract') {
-    let extractedData: { title: string; content: string } | null = null;
-    const hostname = window.location.hostname;
-
-    if (hostname.includes('openai.com')) {
-      extractedData = extractFromChatGPT();
-    } else if (hostname.includes('aistudio.google.com')) {
-      extractedData = extractFromGoogleAIStudio();
-    } else if (hostname.includes('claude.ai')) {
-      extractedData = extractFromClaudeAI();
+// Main Extraction Function: 4-Tier Black Hole Strategy
+function performExtraction(mode: 'full' | 'transplant' | 'code' | 'logic' | 'context'): { success: boolean; content?: string; error?: string; isHtml?: boolean } {
+  try {
+    // Tier 1: User Selection (Highest Priority)
+    const selectedText = getSelectedText();
+    if (selectedText) {
+      if (mode === 'full') {
+        // For full mode, try to get HTML from selection
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const container = document.createElement('div');
+          container.appendChild(range.cloneContents());
+          const html = container.innerHTML;
+          if (html.trim().length > 0) {
+            return { success: true, content: html, isHtml: true };
+          }
+        }
+        return { success: true, content: selectedText, isHtml: false };
+      } else {
+        return { success: true, content: selectedText, isHtml: false };
+      }
     }
 
-    if (!extractedData) {
-      extractedData = extractGenericContent();
+    // Tier 2: Deep Targeting
+    const selectorContent = extractWithSelectors();
+    if (selectorContent && selectorContent.trim().length > 50) {
+      return { success: true, content: selectorContent, isHtml: true };
     }
 
-    if (extractedData) {
-      sendResponse({ success: true, ...extractedData, url: window.location.href });
+    // Tier 3: TreeWalker (The Drill)
+    const treeWalkerText = extractWithTreeWalker();
+    if (treeWalkerText.trim().length > 50) {
+      if (mode === 'full') {
+        // For full mode, try to get HTML
+        const bodyClone = document.body.cloneNode(true) as HTMLElement;
+        // Remove noise elements
+        const noiseSelectors = 'nav, footer, header, script, style, button, aside, .nav, .footer, .header, .sidebar, .menu, .toolbar, .ad, .advertisement, .icon, .avatar, .timestamp';
+        bodyClone.querySelectorAll(noiseSelectors).forEach(el => el.remove());
+        const html = bodyClone.innerHTML;
+        if (html.trim().length > 50) {
+          return { success: true, content: html, isHtml: true };
+        }
+      }
+      return { success: true, content: treeWalkerText, isHtml: false };
+    }
+
+    // Tier 4: Nuclear Option
+    const nuclearText = extractNuclear();
+    if (nuclearText.trim().length > 50) {
+      if (mode === 'full') {
+        // For full mode, return body HTML
+        const bodyClone = document.body.cloneNode(true) as HTMLElement;
+        const noiseSelectors = 'nav, footer, header, script, style, button, aside';
+        bodyClone.querySelectorAll(noiseSelectors).forEach(el => el.remove());
+        return { success: true, content: bodyClone.innerHTML, isHtml: true };
+      }
+      return { success: true, content: nuclearText, isHtml: false };
+    }
+
+    return { success: false, error: 'No content found' };
+  } catch (error) {
+    console.error('[PRISM] Extraction error:', error);
+    return { success: false, error: 'Extraction failed' };
+  }
+}
+
+// ============================================
+// MESSAGE LISTENER: The Only Interface
+// ============================================
+
+chrome.runtime.onMessage.addListener((
+  message: { action: string; mode?: 'full' | 'transplant' | 'code' | 'logic' | 'context' },
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response: { success: boolean; content?: string; error?: string; isHtml?: boolean }) => void
+) => {
+  if (message.action === 'extract') {
+    console.log('[PRISM] Extraction requested, mode:', message.mode);
+    
+    // Perform 4-Tier Extraction (transplant uses same logic as full)
+    const extractionMode = message.mode === 'transplant' ? 'full' : (message.mode || 'full');
+    const result = performExtraction(extractionMode);
+    
+    if (result.success && result.content) {
+      console.log('[PRISM] Extraction successful, content length:', result.content.length);
+      sendResponse({
+        success: true,
+        content: result.content,
+        isHtml: result.isHtml || false
+      });
     } else {
-      sendResponse({ success: false, error: 'Content extraction failed completely.' });
+      console.error('[PRISM] Extraction failed:', result.error);
+      sendResponse({
+        success: false,
+        error: result.error || 'No content found'
+      });
     }
-    return true;
+    
+    return true; // Keep channel open for async response
   }
+  
+  return false;
 });
