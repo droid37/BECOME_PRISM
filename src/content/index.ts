@@ -19,17 +19,15 @@ function extractFromChatGPT(): { title: string; content: string } | null {
 
 // Function to extract content from Google AI Studio
 function extractFromGoogleAIStudio(): { title:string; content: string } | null {
-  // **[CRITICAL FIX for AI Studio]**
-  // The title is inside a specific, non-obvious element. This selector targets it directly.
-  const titleElement = document.querySelector('.mat-mdc-tooltip-trigger.mdc-icon-button');
-  // The content is within a div with a specific class for scrolling.
+  // **[GROUND TRUTH FIX - DIRECT INJECTION]**
+  // Targeting based on verified data-testid attributes.
+  const titleElement = document.querySelector('h2[data-testid="context-panel-title"]');
   const contentElement = document.querySelector('div.message-container');
 
   if (titleElement && contentElement) {
-    // The title is often inside an aria-label or a child span, let's try to get it robustly
-    const titleText = titleElement.getAttribute('aria-label') || titleElement.textContent?.trim() || 'AI Studio Prompt';
+    const titleText = titleElement.textContent?.trim() || 'AI Studio Prompt';
     return {
-      title: titleText.replace('Rename ', ''), // Clean up "Rename " prefix if it exists
+      title: titleText,
       content: contentElement.innerHTML,
     };
   }
